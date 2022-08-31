@@ -1,0 +1,458 @@
+PROGRAM RIF_RANGE_SEND_DATA
+CONST 
+    cc_home = 137
+    cc_clear_win = 128
+    
+    RIF_RANGE = 25
+    NORM_RIFTEK = 16384
+VAR
+
+    data_type : INTEGER
+    int_value : INTEGER
+    real_value : REAL
+    str_value : STRING[20]
+    status : INTEGER
+
+    comm_file : FILE
+
+    COMMAND_TYPE : INTEGER
+    PARAMETER_SIZE_IN_BYTES : INTEGER
+    
+    PARAMETER_FIRST_BYTE_CODE : INTEGER
+    PARAMETER_CODE_BYTE_ARRAY : ARRAY[24] OF BYTE
+    PARAMETER_VALUE : REAL
+    PARAMETER_VALUE_BYTE_ARRAY : ARRAY[24] OF BYTE
+    
+    
+    PARAMETERS_FIRST_REGISTER : INTEGER
+    
+    REQUEST_SIZE : INTEGER
+    REQUEST_ARRAY : ARRAY[24] OF BYTE
+
+    RESPONSE_SIZE : INTEGER
+    RESPONSE_ARRAY : ARRAY[24] OF BYTE 
+
+
+    STOP_DO : INTEGER
+
+	--TYPE
+	--RANGE_INFO = STRUCTURE
+	DEVICE_TYPE : REAL
+	PO_VERSION : REAL
+    SERIAL_NUMBER : REAL
+    BASE_DISTANCE : REAL
+    RANGE : REAL
+    --ENDSTRUCTURE
+
+    DISTANCE : REAL
+
+
+    ROUTINE POSTERR(cause : STRING)
+    BEGIN
+	    IF(STATUS <> 0) THEN
+			WRITE(STATUS)
+            POST_ERR(STATUS, cause, 1, 1)
+        ENDIF
+    END POSTERR
+
+    ROUTINE POST_CUST_ERR(cause : STRING)
+    BEGIN
+        POST_ERR(0, cause, 0, 0)
+    END POST_CUST_ERR
+
+
+    
+
+    
+    --------------------
+    ROUTINE WRITE_COMMAND_TO_REQUEST_ARRAY(c_type : INTEGER)
+    BEGIN
+        REQUEST_ARRAY[1] = 1
+        REQUEST_ARRAY[2] = 128 + c_type
+    END WRITE_COMMAND_TO_REQUEST_ARRAY
+    --------------------
+    
+    --------------------
+    ROUTINE WRITE_PARAMETER_CODE_TO_REQ_ARRAY(param_first_byte_code : INTEGER; param_size_in_bytes : INTEGER)
+    VAR 
+        --byte_parameter : ARRAY[8] OF BYTE
+        OUT_INDEX : INTEGER
+        IN_INDEX :INTEGER
+        comparation_value : REAL
+        shift_value : REAL
+    BEGIN
+        comparation_value = 15
+        shift_value = 1;
+        FOR OUT_INDEX = 3 TO param_size_in_bytes * 2 + 3 DO
+            FOR IN_INDEX = 0 TO 2 DO
+                REQUEST_ARRAY[OUT_INDEX] =  param_first_byte_code AND TRUNC(comparation_value)
+                REQUEST_ARRAY[OUT_INDEX] = 128 + TRUNC(REQUEST_ARRAY[OUT_INDEX] / shift_value)
+                comparation_value = comparation_value * EXP(4 * LN(2))
+                shift_value = shift_value * EXP(4 * LN(2))
+                OUT_INDEX = OUT_INDEX + 1
+            ENDFOR 
+            -- IF param_first_byte_code < 15 THEN
+            --     REQUEST_ARRAY[index] =  RUNC(param_first_byte_code) AND TRUNC(comparation_value)
+            --     REQUEST_ARRAY[index + 1] = 128
+            -- ELSE
+            --     REQUEST_ARRAY[INDEX] = 128 + param_first_byte_code MOD 10
+            --     REQUEST_ARRAY[INDEX + 1] = 128 + param_first_byte_code DIV 10
+            -- ENDIF
+
+            param_first_byte_code = param_first_byte_code + 1
+        ENDFOR
+    END WRITE_PARAMETER_CODE_TO_REQ_ARRAY
+    --------------------
+
+    --------------------
+    ROUTINE PARAMETER_TO_BYTE_ARRAY(param_value : REAL; param_size_in_bytes : INTEGER) : ARRAY OF BYTE
+    VAR
+        param_byte_array : ARRAY[24] OF BYTE
+        index : INTEGER
+        comparation_value : REAL
+    BEGIN 
+        comparation_value = 15
+        FOR index = 1 TO param_size_in_bytes * 2 DO
+            param_byte_array[index] = TRUNC(param_value) AND TRUNC(comparation_value)
+            comparation_value = comparation_value * EXP(4 * LN(2))
+        ENDFOR
+        RETURN (param_byte_array)
+    END PARAMETER_TO_BYTE_ARRAY
+    --------------------
+
+    --------------------
+    ROUTINE WRITE_PARAMETER_VALUE_TO_REQ_ARRAY(param_value : REAL; param_size_in_bytes : INTEGER; req_arr_start_index : INTEGER)
+    VAR
+        param_byte_array : ARRAY[24] OF BYTE
+        INDEX1 : INTEGER
+        INDEX2 : INTEGER
+    BEGIN
+        param_byte_array = PARAMETER_TO_BYTE_ARRAY(param_value, param_size_in_bytes)
+        INDEX2 = 1
+        FOR INDEX1 = req_arr_start_index TO req_arr_start_index + param_size_in_bytes * 2 DO
+            WRITE(param_byte_array[INDEX2])
+            REQUEST_ARRAY[INDEX1] = 128 + param_byte_array[INDEX2]
+            INDEX2 = INDEX2 + 1
+        ENDFOR
+    END WRITE_PARAMETER_VALUE_TO_REQ_ARRAY
+    --------------------
+
+    --------------------
+    ROUTINE READ_PARAMETER_FROM_BYTE_ARRAY(response : ARRAY OF BYTE; start_byte_number : INTEGER; bytes_count : INTEGER) : REAL
+    VAR
+        param_value : REAL
+        multiplier : INTEGER
+        power : INTEGER
+        index : INTEGER
+    BEGIN
+        param_value = 0
+        multiplier = bytes_count - 1
+        FOR INDEX = start_byte_number + bytes_count - 1 DOWNTO start_byte_number DO
+            power = multiplier * 4
+            WRITE(response[index])
+            param_value = param_value + ((response[index] AND 15) * EXP(power * LN(2)))
+            multiplier = multiplier - 1
+        ENDFOR
+        RETURN (param_value)
+    END READ_PARAMETER_FROM_BYTE_ARRAY
+    --------------------
+    
+    --------------------
+    ROUTINE SEND_REQUEST(req_bytes : ARRAY OF BYTE;  req_size : INTEGER; c_file : FILE)
+    VAR
+        index : INTEGER
+    BEGIN
+        FOR INDEX = 1 TO req_size DO
+            WRITE c_file(req_bytes[INDEX]::1)
+            WRITE('REQ', req_bytes[INDEX]::1,CR)
+        ENDFOR
+        
+        STATUS = IO_STATUS(comm_file) 
+        WRITE('FILE STATUS  =  ',STATUS,CR)
+    
+    END SEND_REQUEST
+    --------------------
+
+    --------------------
+    ROUTINE READ_RESPONSE(res_bytes : ARRAY OF BYTE; res_size : INTEGER; c_file : FILE)
+    VAR
+        index : INTEGER
+    BEGIN
+        WRITE('RESPONSE_SIZE', res_size,CR)
+        FOR INDEX = 1 TO res_size DO
+            READ c_file(res_bytes[INDEX]::1)
+        ENDFOR
+        --READ c_file(BYTE_1::1)
+        --WRITE(BYTE_1,CR)
+        --READ c_file(BYTE_2::1)
+        --WRITE(BYTE_2,CR)
+        STATUS = IO_STATUS(comm_file) 
+        WRITE('FILE STATUS  =  ', STATUS, CR)
+    
+    END READ_RESPONSE
+    --------------------
+BEGIN
+
+	-----------------------------------
+	GET_TPE_PRM(1, data_type, int_value, real_value, str_value, status)
+    POSTERR('UNABLE TO READ PARAMETER')
+    IF(data_type <> 1 ) THEN 
+    	POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+    ENDIF
+    ------------------------------------------
+    COMMAND_TYPE = int_value
+    
+
+    IF((COMMAND_TYPE < 1) OR (COMMAND_TYPE > 8)) THEN 
+        POST_CUST_ERR('PARAMETER SHOULD BE FROM 1 TO 8') 
+    ENDIF
+    
+    WRITE (CHR(cc_home), CHR(cc_clear_win)) -- Clear TP USER menu
+	
+    SET_FILE_ATR(comm_file, ATR_UF)
+    SET_FILE_ATR(comm_file, ATR_IA)
+
+    STATUS = SET_PORT_ATR(PORT_3, ATR_BAUD, BAUD_9600)
+    POSTERR('Error setting ATR_BAUD!')
+    STATUS = SET_PORT_ATR(PORT_3, ATR_DBITS, DBITS_8)
+    POSTERR('Error setting ATR_DBITS!')
+    STATUS = SET_PORT_ATR(PORT_3, ATR_PARITY, PARITY_EVEN)
+    POSTERR('Error setting ATR_PARITY!')
+    STATUS = SET_PORT_ATR(PORT_3, ATR_READAHD, 1)
+    POSTERR('Error setting ATR_READAHD!')
+    STATUS = SET_PORT_ATR(PORT_3, ATR_SBITS, SBITS_1)
+    POSTERR('Error setting ATR_SBITS!')
+
+
+    CLR_IO_STAT(comm_file)
+    STATUS = 0
+  
+    OPEN FILE comm_file('RW', 'P3:')
+    STATUS = IO_STATUS(comm_file)
+    WRITE('OPEN FILE STATUS  =  ',STATUS,CR)
+  
+  ----------------------------------------------------------------
+  -- SEND COMMAND --
+  ----------------------------------------------------------------
+  
+  CLR_IO_STAT(comm_file)
+  STATUS = 0
+
+    ----DEVICE IDENTIFICATION----
+    IF(COMMAND_TYPE = 1) THEN
+        -- GET REGISTER
+        GET_TPE_PRM(2, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        PARAMETERS_FIRST_REGISTER = int_value
+
+        REQUEST_SIZE = 2
+        RESPONSE_SIZE = 16
+
+        WRITE_COMMAND_TO_REQUEST_ARRAY(COMMAND_TYPE)   
+        SEND_REQUEST(REQUEST_ARRAY, REQUEST_SIZE, comm_file)
+        READ_RESPONSE(RESPONSE_ARRAY, RESPONSE_SIZE, comm_file)
+        
+        --DEVICE TYPE--
+        DEVICE_TYPE =  READ_PARAMETER_FROM_BYTE_ARRAY(RESPONSE_ARRAY, 1, 2)
+        SET_REAL_REG(PARAMETERS_FIRST_REGISTER, DEVICE_TYPE, STATUS)
+        
+        --PO VERSION--
+        PO_VERSION = READ_PARAMETER_FROM_BYTE_ARRAY(RESPONSE_ARRAY, 3, 2)
+        SET_REAL_REG(PARAMETERS_FIRST_REGISTER + 1, PO_VERSION, STATUS)
+        
+        --SERIAL NUMBER--
+        SERIAL_NUMBER = READ_PARAMETER_FROM_BYTE_ARRAY(RESPONSE_ARRAY, 5, 4)
+        SET_REAL_REG(PARAMETERS_FIRST_REGISTER + 2, SERIAL_NUMBER, STATUS)
+        
+        --BASE DISTANCE--
+        BASE_DISTANCE = READ_PARAMETER_FROM_BYTE_ARRAY(RESPONSE_ARRAY, 9, 4)
+        SET_REAL_REG(PARAMETERS_FIRST_REGISTER + 3, BASE_DISTANCE, STATUS)
+        
+        --RANGE--
+        RANGE = READ_PARAMETER_FROM_BYTE_ARRAY(RESPONSE_ARRAY, 13, 4)
+        SET_REAL_REG(PARAMETERS_FIRST_REGISTER + 4, RANGE, STATUS)
+    ENDIF
+    ----DEVICE IDENTIFICATION----
+    
+    
+    
+    
+    --READ PARAMETER VALUE--
+    IF(COMMAND_TYPE = 2) THEN
+        --READ PARAMETER SIZE (BYTES)
+        GET_TPE_PRM(2, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        PARAMETER_SIZE_IN_BYTES = int_value
+
+        --READ PARAMETER FIRST BYTE CODE INT OR STRING
+        GET_TPE_PRM(3, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        PARAMETER_FIRST_BYTE_CODE = int_value
+
+        --READ REGISTER
+        GET_TPE_PRM(4, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        PARAMETERS_FIRST_REGISTER = int_value
+
+        REQUEST_SIZE = 2 + PARAMETER_SIZE_IN_BYTES * 2
+        RESPONSE_SIZE = PARAMETER_SIZE_IN_BYTES * 2
+        
+        
+        WRITE_COMMAND_TO_REQUEST_ARRAY(COMMAND_TYPE)   
+        WRITE_PARAMETER_CODE_TO_REQ_ARRAY(PARAMETER_FIRST_BYTE_CODE, PARAMETER_SIZE_IN_BYTES)
+        
+        SEND_REQUEST(REQUEST_ARRAY, REQUEST_SIZE, comm_file)
+
+        READ_RESPONSE(RESPONSE_ARRAY, RESPONSE_SIZE, comm_file)
+
+        PARAMETER_VALUE = READ_PARAMETER_FROM_BYTE_ARRAY(RESPONSE_ARRAY, 1, RESPONSE_SIZE)
+        SET_REAL_REG(PARAMETERS_FIRST_REGISTER, PARAMETER_VALUE, STATUS)
+    ENDIF
+    --READ PARAMETER VALUE--
+
+
+    --WRITE PARAMETER VALUE--
+    IF(COMMAND_TYPE = 3) THEN
+        --READ PARAMETER SIZE (BYTES)
+        GET_TPE_PRM(2, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        PARAMETER_SIZE_IN_BYTES = int_value
+
+        --READ PARAMETER FIRST BYTE CODE INT OR STRING
+        GET_TPE_PRM(3, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        PARAMETER_FIRST_BYTE_CODE = int_value
+
+        --READ PARAMETER VALUE
+        GET_TPE_PRM(4, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        PARAMETER_VALUE = int_value
+
+        REQUEST_SIZE = 2 + PARAMETER_SIZE_IN_BYTES * 4
+        
+
+        WRITE_COMMAND_TO_REQUEST_ARRAY(COMMAND_TYPE)
+        WRITE_PARAMETER_CODE_TO_REQ_ARRAY(PARAMETER_FIRST_BYTE_CODE, PARAMETER_SIZE_IN_BYTES)
+        WRITE_PARAMETER_VALUE_TO_REQ_ARRAY(PARAMETER_VALUE, PARAMETER_SIZE_IN_BYTES, 3 + PARAMETER_SIZE_IN_BYTES * 2)
+        SEND_REQUEST(REQUEST_ARRAY, REQUEST_SIZE, comm_file)
+        --READ_RESPONSE(RESPONSE_ARRAY, RESPONSE_SIZE, comm_file)
+    ENDIF
+    --WRITE PARAMETER VALUE--
+
+    --FLASH MEMORY--
+    IF(COMMAND_TYPE = 4) THEN
+    ENDIF
+    --FLASH MEMORY--
+
+    --RESULT SNAPPING--
+    IF(COMMAND_TYPE = 5) THEN
+    ENDIF
+    --RESULT SNAPPING--
+
+    --GET RANGE VALUE OR START RANGE THREAD--
+    IF(COMMAND_TYPE = 6) THEN
+        --GET REGISTER
+        GET_TPE_PRM(2, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        PARAMETERS_FIRST_REGISTER = int_value
+
+        REQUEST_SIZE = 2
+        RESPONSE_SIZE = 4
+
+        WRITE_COMMAND_TO_REQUEST_ARRAY(COMMAND_TYPE)   
+        SEND_REQUEST(REQUEST_ARRAY, REQUEST_SIZE, comm_file)
+        READ_RESPONSE(RESPONSE_ARRAY, RESPONSE_SIZE, comm_file)
+
+        DISTANCE = READ_PARAMETER_FROM_BYTE_ARRAY(RESPONSE_ARRAY, 1, RESPONSE_SIZE)
+        DISTANCE = DISTANCE * RIF_RANGE / NORM_RIFTEK
+        
+        SET_REAL_REG(PARAMETERS_FIRST_REGISTER, DISTANCE, STATUS)
+    ENDIF
+    --GET RANGE VALUE--
+
+
+    IF(COMMAND_TYPE = 7) THEN
+        --GET REGISTER
+        GET_TPE_PRM(2, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        PARAMETERS_FIRST_REGISTER = int_value
+        
+        --GET STOP DO
+        GET_TPE_PRM(3, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+    	    POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        STOP_DO = int_value
+        
+        REQUEST_SIZE = 2
+        RESPONSE_SIZE = 4
+
+        WRITE_COMMAND_TO_REQUEST_ARRAY(COMMAND_TYPE)   
+        SEND_REQUEST(REQUEST_ARRAY, REQUEST_SIZE, comm_file)
+
+        WHILE DOUT[STOP_DO] = OFF DO
+            READ_RESPONSE(RESPONSE_ARRAY, RESPONSE_SIZE, comm_file)
+
+            DISTANCE = READ_PARAMETER_FROM_BYTE_ARRAY(RESPONSE_ARRAY, 1, RESPONSE_SIZE)
+            DISTANCE = DISTANCE * RIF_RANGE / NORM_RIFTEK
+            
+            SET_REAL_REG(PARAMETERS_FIRST_REGISTER, DISTANCE, STATUS)
+
+        ENDWHILE
+        REQUEST_SIZE = 2
+        COMMAND_TYPE = 8
+        WRITE_COMMAND_TO_REQUEST_ARRAY(COMMAND_TYPE)
+        SEND_REQUEST(REQUEST_ARRAY, REQUEST_SIZE, comm_file)
+    ENDIF
+    --GET RANGE VALUE--
+
+
+    --STOP RANGE THREAD--
+    IF(COMMAND_TYPE = 8) THEN
+        REQUEST_SIZE = 2
+        WRITE_COMMAND_TO_REQUEST_ARRAY(COMMAND_TYPE)
+        SEND_REQUEST(REQUEST_ARRAY, REQUEST_SIZE, comm_file)
+    ENDIF
+    --STOP RANGE THREAD--
+
+
+    ----------------------------------------------------------------
+    -- CLOSE FILE --
+    ----------------------------------------------------------------
+    
+    CLR_IO_STAT(comm_file) 
+    STATUS = 0
+    
+    CLOSE FILE comm_file
+    STATUS = IO_STATUS(comm_file)	
+
+
+END RIF_RANGE_SEND_DATA
