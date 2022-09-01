@@ -1,0 +1,50 @@
+PROGRAM CUST_READ_PARAMS
+VAR 
+ROUTINE GET_TPE_INT_PARAMETER(number : INTEGER) : INTEGER
+    VAR
+        data_type : INTEGER
+        int_value : INTEGER
+        real_value : REAL
+        str_value : STRING[20]
+        status : INTEGER
+    BEGIN
+        GET_TPE_PRM(number, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+            POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        RETURN (int_value)
+    END GET_TPE_INT_PARAMETER
+
+    ROUTINE GET_TPE_REAL_PARAMETER(number : INTEGER) : REAL
+    VAR
+        data_type : INTEGER
+        int_value : INTEGER
+        real_value : REAL
+        str_value : STRING[20]
+        status : INTEGER
+    BEGIN
+        GET_TPE_PRM(number, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 2 ) THEN 
+            POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        RETURN (real_value)
+    END GET_TPE_REAL_PARAMETER
+
+    ROUTINE GET_TPE_STRING_PARAMETER(number : INTEGER) : STRING
+    VAR
+        data_type : INTEGER
+        int_value : INTEGER
+        real_value : REAL
+        str_value : STRING[20]
+        status : INTEGER
+    BEGIN
+        GET_TPE_PRM(number, data_type, int_value, real_value, str_value, status)
+        POSTERR('UNABLE TO READ PARAMETER')
+        IF(data_type <> 1 ) THEN 
+            POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
+        ENDIF
+        RETURN (string_value)
+    END GET_TPE_STRING_PARAMETER
+END CUST_READ_PARAMS
