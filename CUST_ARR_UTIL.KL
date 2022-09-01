@@ -1,0 +1,17 @@
+    ROUTINE CLEAR_ARR(array : ARRAY OF BYTE, START_INDEX : INTEGER, LENGTH : INTEGER)
+    VAR 
+        index: INTEGER
+    BEGIN
+        FOR index = START_INDEX TO START_INDEX + LENGTH - 1 DO
+            array[index] = 0
+        ENDFOR
+    END CLEAR_ARR
+
+    ROUTINE CLEAR_ARR_TO_END(array : ARRAY OF BYTE, START_INDEX : INTEGER, LENGTH : INTEGER)
+    VAR 
+        index: INTEGER
+    BEGIN
+        FOR index = START_INDEX TO ARR_LENGTH(array)  DO
+            array[index] = 0 
+        ENDFOR
+    END CLEAR_ARR_TO_END
