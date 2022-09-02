@@ -21,11 +21,14 @@ END CLEAR_ARR_TO_END
 ROUTINE PUSH_TO_ARRAY(dest_arr : ARRAY OF BYTE; dest_arr_insert_index : INTEGER; source_arr : ARRAY OF BYTE; source_arr_take_index : INTEGER; source_arr_take_length : INTEGER)
 VAR
  index : INTEGER
+ dest_index : INTEGER
 BEGIN
- FOR index = source_arr_take_index TO source_arr_take_index + source_arr_take_length - 1 DO
-     dest_arr[dest_arr_insert_index] = source_arr[index]
-     dest_arr_insert_index = dest_arr_insert_index + 1
- ENDFOR
+    dest_index = dest_arr_insert_index
+    FOR index = source_arr_take_index TO source_arr_take_index + source_arr_take_length - 1 DO
+        dest_arr[dest_index] = source_arr[index]
+        dest_index = dest_index + 1
+    ENDFOR
+
 END PUSH_TO_ARRAY
 BEGIN
 END CUST_ARR_UTIL

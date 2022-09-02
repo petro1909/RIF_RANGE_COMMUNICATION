@@ -1,6 +1,6 @@
 PROGRAM CUST_READ_PARAMS
 ----POST ERRORS----
-ROUTINE POSTERR(cause : STRING) & 
+ROUTINE POSTERR(cause : STRING; status : INTEGER) & 
 FROM CUST_ERRORS
 ROUTINE POST_CUST_ERR(cause : STRING) & 
 FROM CUST_ERRORS
@@ -15,7 +15,7 @@ ROUTINE GET_TPE_INT_PARAMETER(number : INTEGER) : INTEGER
         status : INTEGER
     BEGIN
         GET_TPE_PRM(number, data_type, int_value, real_value, str_value, status)
-        POSTERR('UNABLE TO READ PARAMETER')
+        POSTERR('UNABLE TO READ PARAMETER', status)
         IF(data_type <> 1 ) THEN 
             POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
         ENDIF
@@ -31,7 +31,7 @@ ROUTINE GET_TPE_INT_PARAMETER(number : INTEGER) : INTEGER
         status : INTEGER
     BEGIN
         GET_TPE_PRM(number, data_type, int_value, real_value, str_value, status)
-        POSTERR('UNABLE TO READ PARAMETER')
+        POSTERR('UNABLE TO READ PARAMETER', status)
         IF(data_type <> 2 ) THEN 
             POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
         ENDIF
@@ -47,7 +47,7 @@ ROUTINE GET_TPE_INT_PARAMETER(number : INTEGER) : INTEGER
         status : INTEGER
     BEGIN
         GET_TPE_PRM(number, data_type, int_value, real_value, str_value, status)
-        POSTERR('UNABLE TO READ PARAMETER')
+        POSTERR('UNABLE TO READ PARAMETER', status)
         IF(data_type <> 1 ) THEN 
             POST_CUST_ERR('PARAMETER SHOULD BE INTEGER ') 
         ENDIF
