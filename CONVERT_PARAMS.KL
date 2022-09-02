@@ -6,50 +6,50 @@ CONST
     --CONVERT ONE BYTE DECIMAL PARAMETER CODE OR PARAMETER VALUE TO HEXADECIMAL BYTE ARRAY WITH LENGTH = 2
     --5 --> [5, 0], 
     --[63] --> 3 * 16 ^1 + F(15) * 16 ^ 0 --> [15, 3]
-    ROUTINE CNV_DECIMAL_PARAM_TO_BYTE_ARRAY(param : INTEGER) : ARRAY OF BYTE
+    ROUTINE CNV_DECIMAL_PARAM_TO_BYTE_ARRAY(param : INTEGER; param_size : INTEGER) : ARRAY OF BYTE
     VAR 
-        byte_parameter : ARRAY[2] OF BYTE
+        byte_parameter : ARRAY[10] OF BYTE
         comparation_value : REAL
         shift_value : REAL
+        index : INTEGER
     BEGIN
         comparation_value = 15
         shift_value = 1
-        byte_parameter[1] = param AND TRUNC(comparation_value)
-        
-        comparation_value = comparation_value * EXP(4 * LN(2))
-        shift_value = shift_value * EXP(4 * LN(2))
-        byte_parameter[2] = TRUNC(REQUEST_ARRAY[OUT_INDEX] / shift_value)
-
+        FOR INDEX = 1 TO param_size * 2 DO
+            byte_parameter[INDEX] = RIFTEK_DEFAULT_COMMAND +TRUNC((param AND TRUNC(comparation_value)) / shift_value)
+            comparation_value = comparation_value * EXP(4 * LN(2))
+            shift_value = shift_value * EXP(4 * LN(2))
+        ENDFOR
         RETURN (byte_parameter)
     END CNV_DECIMAL_PARAM_TO_BYTE_ARRAY
     ------------------------------------------------------------------------------------------------------
 
     ------------------------------------------------------------------------------------------------------
-    --CONVERT HEXADECIAMAL BYTE ARRAY WITH LENGTH 2 TO FIRTEK BYTE QUERY ARRAY 
-    --[15, 3] --> [143, 131]
-    ROUTINE CNV_ARR_PARAM_TO_RIF_PARAM_ARR(param_arr : ARRAY OF BYTE) : ARRAY OF BYTE
+    --CONVERT ONE BYTE DECIMAL PARAMETER CODE OR PARAMETER VALUE TO HEXADECIMAL BYTE ARRAY WITH LENGTH = 2
+    --5 --> [5, 0], 
+    --[63] --> 3 * 16 ^1 + F(15) * 16 ^ 0 --> [15, 3]
+    ROUTINE CNV_DECIMAL_PARAM_CODE_TO_BYTE_ARRAY(param_code : INTEGER; param_size : INTEGER) : ARRAY OF BYTE
     VAR 
-        index : INTEGER
-        r_array : ARRAY[2] OF BYTE
+        byte_parameter : ARRAY[10] OF BYTE
+        comparation_value : REAL
+        shift_value : REAL
+        out_index : INTEGER
+        in_index : INTEGER
     BEGIN
-        FOR index = 1 TO  2 DO
-            param_arr[index] = param_arr[index] + RIFTEK_DEFAULT_COMMAND
+        FOR out_index = 1 TO param_size * 2 DO
+            comparation_value = 15
+            shift_value = 1
+            FOR in_index = 1 TO 2 DO
+                byte_parameter[out_index] = RIFTEK_DEFAULT_COMMAND + TRUNC((param_code AND TRUNC(comparation_value)) / shift_value)
+                comparation_value = comparation_value * EXP(4 * LN(2))
+                shift_value = shift_value * EXP(4 * LN(2))
+                out_index = out_index + 1
+            ENDFOR
+            param_code = param_code + 1
         ENDFOR
-        RETURN (r_array)
-    END CNV_BYTE_ARR_PARAM_TO_RIF_PARAM_ARR
+        RETURN (byte_parameter)
+    END CNV_DECIMAL_PARAM_CODE_TO_BYTE_ARRAY
     ------------------------------------------------------------------------------------------------------
-    
-    ------------------------------------------------------------------------------------------------------
-    ROUTINE CNV_DECIMAL_PARAM_TO_RIF_PARAM_ARR(param : INTEGER) : ARRAY OF BYTE
-    VAR
-        arr : ARRAY[2]
-    BEGIN
-        arr = CNV_DECIMAL_PARAM_TO_BYTE_ARRAY(param)
-        arr = CNV_ARR_PARAM_TO_RIF_PARAM_ARR(arr)
-        RETURN (arr)
-    END CNV_DECIMAL_PARAM_TO_RIF_PARAM_ARR
-    ------------------------------------------------------------------------------------------------------
-
 
     ------------------------------------------------------------------------------------------------------
     --CONVERT RIFTEK RESPONSE MESSAGE TO INTEGER PARAMETER
