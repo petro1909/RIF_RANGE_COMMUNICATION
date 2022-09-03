@@ -1,0 +1,18 @@
+PROGRAM RIFTEK_OFF
+VAR
+    comm_file : FILE
+    
+    ROUTINE OPEN_FILE(c_file : FILE) &
+    FROM COMMUNICATION
+
+    ROUTINE WRITE_PARAMETER_VALUE(c_file : FILE; size : INTEGER; code : INTEGER; value : INTEGER ) &
+    FROM RIF_COMMANDS
+
+    ROUTINE CLOSE_FILE(c_file : FILE) &
+    FROM COMMUNICATION
+
+BEGIN
+    OPEN_FILE(comm_file)
+    WRITE_PARAMETER_VALUE(comm_file, 1, 1, 0)
+    CLOSE_FILE(comm_file)    
+END RIFTEK_OFF
