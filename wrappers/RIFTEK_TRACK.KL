@@ -9,6 +9,7 @@ PROGRAM RIFTEK_TRACK
 %ENVIRONMENT bynam
 %ENVIRONMENT fdev
 %ENVIRONMENT flbt
+%ENVIRONMENT regope
 %INCLUDE klevccdf
 %INCLUDE klevkeys
 %INCLUDE klevkmsk
@@ -23,6 +24,16 @@ VAR
     MAX_DIFF : REAL
 
     comm_file : FILE
+    
+    axis_limit_mask : INTEGER
+    ovr_trv_mask : INTEGER
+    group_no : INTEGER
+    ROBOT_COORD : XYZWPREXT
+    UFRAME_NUM : INTEGER
+    UTOOL_NUM : INTEGER
+
+    OUT_PR_NUM : INTEGER
+    STATUS : INTEGER
     
     ROUTINE GET_TPE_INT_PARAMETER(number : INTEGER) : INTEGER &
     FROM CUST_READ_PARAMS
@@ -47,6 +58,7 @@ BEGIN
     RESULT_OUT_REGISTER = GET_TPE_INT_PARAMETER(1)
     STOP_DO = GET_TPE_INT_PARAMETER(2)
     MAX_DIFF = GET_TPE_REAL_PARAMETER(3)
+    OUT_PR_NUM = GET_TPE_INT_PARAMETER(4)
     
     OPEN_FILE(comm_file)
     START_RANGE_THREAD(comm_file)
@@ -55,19 +67,19 @@ BEGIN
     PREVIOUS_DISTANCE = DISTANCE 
     
     WHILE DOUT[STOP_DO] = OFF DO
+        
         DISTANCE = READ_RANGE_THREAD(comm_file, RESULT_OUT_REGISTER)
         DIFF = DISTANCE - PREVIOUS_DISTANCE
+        PREVIOUS_DISTANCE = DISTANCE
+        
         IF DIFF < 0 THEN
             DIFF = DIFF * (-1)
         ENDIF
         IF DIFF > MAX_DIFF THEN
             DOUT[STOP_DO] = ON
         ENDIF
-        DELAY = 10
+        DELAY 10
     ENDWHILE
-
-    DISTANCE = READ_RANGE_THREAD(comm_file, 50) 
-    PREVIOUS_DISTANCE = DISTANCE 
     
     -- WHILE DOUT[20] = OFF DO
     --     WRITE(50, ' ')
@@ -85,5 +97,19 @@ BEGIN
 
     STOP_RANGE_THREAD(comm_file)
     CLOSE_FILE(comm_file)    
+
+
+    --GET ROBOT CURRENT FRAME AND TOOL
+	group_no = 1
+	UFRAME_NUM = $MNUFRAMENUM[1]
+	UTOOL_NUM = $MNUTOOLNUM[1]
+	
+	--SET KAREL UFRAME AND TOOL
+	--$UFRAME = $MNUFRAME[group_no,UFRAME_NUM]
+	$UTOOL =  $MNUTOOL[group_no,UTOOL_NUM]
+
+	ROBOT_COORD = CURPOS(axis_limit_mask, ovr_trv_mask, group_no)
+    SET_POS_REG(OUT_PR_NUM, ROBOT_COORD, STATUS)
+    WRITE('STATUS', STATUS, CR)
 
 END RIFTEK_TRACK
