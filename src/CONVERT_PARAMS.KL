@@ -23,7 +23,7 @@ CONST
     --[63] --> 3 * 16 ^1 + F(15) * 16 ^ 0 --> [15, 3]
     ROUTINE CNV_DECIMAL_PARAM_TO_BYTE_ARRAY(param : INTEGER; param_size : INTEGER) : ARRAY OF BYTE
     VAR 
-        byte_parameter : ARRAY[10] OF BYTE
+        byte_parameter : ARRAY[20] OF BYTE
         comparation_value : REAL
         shift_value : REAL
         index : INTEGER
@@ -45,7 +45,7 @@ CONST
     --[63] --> 3 * 16 ^1 + F(15) * 16 ^ 0 --> [15, 3]
     ROUTINE CNV_DECIMAL_PARAM_CODE_TO_BYTE_ARRAY(param_code : INTEGER; param_size : INTEGER) : ARRAY OF BYTE
     VAR 
-        byte_parameter : ARRAY[10] OF BYTE
+        byte_parameter : ARRAY[20] OF BYTE
         comparation_value : REAL
         shift_value : REAL
         out_index : INTEGER
@@ -76,8 +76,8 @@ CONST
         index : INTEGER
     BEGIN
         param_value = 0
-        multiplier = bytes_count - 1
-        FOR INDEX = start_byte_number + bytes_count - 1 DOWNTO start_byte_number DO
+        multiplier = bytes_count * 2 - 1
+        FOR INDEX = start_byte_number + bytes_count * 2 - 1 DOWNTO start_byte_number DO
             power = multiplier * 4
             param_value = param_value + ((response[index] AND 15) * EXP(power * LN(2)))
             multiplier = multiplier - 1
