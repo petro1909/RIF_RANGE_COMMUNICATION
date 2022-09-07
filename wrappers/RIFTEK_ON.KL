@@ -13,6 +13,6 @@ VAR
 
 BEGIN
     OPEN_FILE(comm_file)
-    WRITE_PARAMETER_VALUE(comm_file, 1, 1, 1)
+    WRITE_PARAMETER_VALUE(comm_file, 1, 0, 1)
     CLOSE_FILE(comm_file)    
 END RIFTEK_ON
