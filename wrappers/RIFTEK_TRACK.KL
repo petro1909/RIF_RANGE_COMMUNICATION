@@ -69,18 +69,22 @@ BEGIN
     PREVIOUS_DISTANCE = DISTANCE 
     
     WHILE DOUT[STOP_DO] = OFF DO
-        
+        CLR_IO_STAT(comm_file)
         DISTANCE = READ_RANGE_THREAD(comm_file, RESULT_OUT_REGISTER) + RIF_BASE_DISTANCE
+        --SET_REAL_REG(RESULT_OUT_REGISTER+1,DISTANCE,STATUS)
         DIFF = DISTANCE - PREVIOUS_DISTANCE
+        WRITE('DIFF', DIFF, CR)
         PREVIOUS_DISTANCE = DISTANCE
         
         IF DIFF < 0 THEN
             DIFF = DIFF * (-1)
         ENDIF
+        WRITE('DIFF ', DIFF, CR)
+        WRITE('MAX_DIFF ', MAX_DIFF, CR)
         IF DIFF > MAX_DIFF THEN
             DOUT[STOP_DO] = ON
         ENDIF
-        DELAY 10
+        --DELAY 1000
     ENDWHILE
     
     -- WHILE DOUT[20] = OFF DO
