@@ -21,7 +21,9 @@ ROUTINE POSTERR(cause : STRING; status : INTEGER) &
 FROM CUST_ERRORS
 ROUTINE POST_CUST_ERR(cause : STRING) & 
 FROM CUST_ERRORS
-----POST ERRORS----
+-------------------------------------------------------------------------------------------------------
+---------------------------------------FILE AND PORT MANIPULATION--------------------------------------
+--SET ATTRIBUTE OF FILE AND PORT AND OPEN FILE
 ROUTINE OPEN_FILE(comm_file : FILE)
 BEGIN
     SET_FILE_ATR(comm_file, ATR_UF)
@@ -46,7 +48,7 @@ BEGIN
     STATUS = IO_STATUS(comm_file)
     WRITE('OPEN FILE STATUS  =  ',STATUS,CR)
 END OPEN_FILE
-
+--CLOSE FILE
 ROUTINE CLOSE_FILE(comm_file : FILE)
 BEGIN
     CLR_IO_STAT(comm_file) 
@@ -55,6 +57,7 @@ BEGIN
     CLOSE FILE comm_file
     STATUS = IO_STATUS(comm_file)	
 END CLOSE_FILE
-
+---------------------------------------FILE AND PORT MANIPULATION--------------------------------------
+-------------------------------------------------------------------------------------------------------
 BEGIN
 END COMMUNICATION

@@ -13,6 +13,8 @@ PROGRAM CUST_ERRORS
 %INCLUDE klevccdf
 %INCLUDE klevkeys
 %INCLUDE klevkmsk
+-----------------------
+-----Custom errors-----
 ROUTINE POSTERR(cause : STRING; STATUS : INTEGER)
 BEGIN
     IF(STATUS <> 0) THEN
@@ -25,5 +27,7 @@ ROUTINE POST_CUST_ERR(cause : STRING)
 BEGIN
     POST_ERR(0, cause, 0, 0)
 END POST_CUST_ERR
+-----Custom errors-----
+-----------------------
 BEGIN
 END CUST_ERRORS

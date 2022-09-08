@@ -13,6 +13,9 @@ PROGRAM CUST_ARR_UTIL
 %INCLUDE klevccdf
 %INCLUDE klevkeys
 %INCLUDE klevkmsk
+-------------------------------------------------------------------------------------------------------
+------------------------------------------ARRAY ROUTINES-----------------------------------------------
+--FILL ARRAY FROM START INDEX WITH DEFINED LENGTH WITH ZEROS 
 ROUTINE CLEAR_ARR(arr : ARRAY OF BYTE; START_INDEX : INTEGER; LENGTH : INTEGER)
 VAR 
 	INDEX: INTEGER
@@ -21,7 +24,7 @@ BEGIN
      arr[INDEX] = 0
  ENDFOR
 END CLEAR_ARR
-
+--FILL ARRAY FROM START INDEX TO END WITH ZEROS
 ROUTINE CLEAR_ARR_TO_END(arr : ARRAY OF BYTE; START_INDEX : INTEGER)
 VAR 
  index: INTEGER
@@ -30,7 +33,7 @@ BEGIN
      arr[INDEX] = 0 
  ENDFOR
 END CLEAR_ARR_TO_END
-
+--INSERT ELEMENTS FROM SOURCE ARRAY FROM START INDEX WITH SPECIFIED LENGTH INTO DESTINATION ARRAY FROM START INDEX
 ROUTINE PUSH_TO_ARRAY(dest_arr : ARRAY OF BYTE; dest_arr_insert_index : INTEGER; source_arr : ARRAY OF BYTE; source_arr_take_index : INTEGER; source_arr_take_length : INTEGER)
 VAR
  index : INTEGER
@@ -43,5 +46,7 @@ BEGIN
     ENDFOR
 
 END PUSH_TO_ARRAY
+------------------------------------------ARRAY ROUTINES-----------------------------------------------
+-------------------------------------------------------------------------------------------------------
 BEGIN
 END CUST_ARR_UTIL
