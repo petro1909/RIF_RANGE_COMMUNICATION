@@ -84,7 +84,7 @@ BEGIN
         --WRITE('DIFF ', DIFF, CR)
         --WRITE('MAX_DIFF ', MAX_DIFF, CR)
         
-        IF (DIFF > MAX_DIFF) OR (DISTANCE = RIF_BASE_DISTANCE) THEN
+        IF DIFF > MAX_DIFF THEN
             DOUT[STOP_DO] = ON
         ENDIF
         --DELAY 1000
